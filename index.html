@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latest Token Details</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh; /* Full screen height */
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #222;
+        }
+        .token-label {
+            font-size: 1.8rem;
+            color: #555;
+        }
+        .token-number {
+            font-size: 8rem; /* 4x larger */
+            font-weight: bold;
+            color: #e63946;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Latest Token Details</h1>
+        <h2 id="doctorName">Loading...</h2>
+        <p class="token-label">Token</p>
+        <p id="tokenNumber" class="token-number">...</p>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://nxwuhfyrjbsopbqonabb.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54d3VoZnlyamJzb3BicW9uYWJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0NTE0NjMsImV4cCI6MjA1NTAyNzQ2M30.AO28p0HZ-YxkeohfeBkNzxmpRBfp9LuwrjMIuOBAkb8";
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // List of doctor IDs in priority order
+        const doctorIds = [
+            "b33f0a4c-e57a-43fe-b2c9-f5e474924cf9", 
+            "3da8fade-7250-4871-a5d9-9acd74fa0b3d"
+        ];
+
+        async function fetchLatestToken(doctorId) {
+            const { data, error } = await supabase
+                .from("token_details")
+                .select("doctor_name, token_number, created_at")
+                .eq("doctor_id", doctorId) // Query by UUID
+                .order("created_at", { ascending: false }) // Get latest entry
+                .limit(1);
+
+            if (error) {
+                console.error("Error fetching data:", error);
+                return null;
+            }
+
+            return data.length > 0 ? data[0] : null;
+        }
+
+        async function updateTokenDetails() {
+            let latestData = null;
+
+            for (let id of doctorIds) {
+                latestData = await fetchLatestToken(id);
+                if (latestData) break; // Stop searching if we found data
+            }
+
+            if (latestData) {
+                document.getElementById("doctorName").innerText = latestData.doctor_name.toUpperCase();
+                document.getElementById("tokenNumber").innerText = latestData.token_number;
+            } else {
+                document.getElementById("doctorName").innerText = "NO DATA";
+                document.getElementById("tokenNumber").innerText = "-";
+            }
+        }
+
+        // Fetch data every 5 seconds
+        updateTokenDetails();
+        setInterval(updateTokenDetails, 5000);
+    </script>
+
+</body>
+</html>
